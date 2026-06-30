@@ -505,12 +505,12 @@
           <label>Collaboration Type *</label>
           <select id="f-type">
             <option value="">Select type…</option>
-            <option value="Consulting">Firmware / Embedded Consulting</option>
-            <option value="Full-time">Full-time Opportunity</option>
-            <option value="R&D Partnership">R&amp;D Partnership</option>
-            <option value="Open Source">Open Source Contribution</option>
-            <option value="Speaking">Speaking / Workshop</option>
-            <option value="Other">Other</option>
+            <option value="1">Firmware / Embedded Consulting</option>
+            <option value="2">Full-time Opportunity</option>
+            <option value="3">R&amp;D Partnership</option>
+            <option value="4">Open Source Contribution</option>
+            <option value="5">Speaking / Workshop</option>
+            <option value="6">Other</option>
           </select>
         </div>
       </div>
@@ -558,6 +558,15 @@
   const SUPABASE_URL     = 'https://xisqduvoyakizhtmxhwg.supabase.co';       // e.g. https://xyzabc.supabase.co
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhpc3FkdXZveWFraXpodG14aHdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3ODc4OTQsImV4cCI6MjA5ODM2Mzg5NH0.Op951Gxo7mVqW0DkQvOr_dvaEE5m9XMAuGyRRHd3U0s'; // starts with eyJ...
   const TABLE_NAME       = 'contact_submissions';
+
+  /* collaboration_type is a SMALLINT column on the table, so the dropdown
+     sends numeric codes instead of text. Reference:
+       1 = Firmware / Embedded Consulting
+       2 = Full-time Opportunity
+       3 = R&D Partnership
+       4 = Open Source Contribution
+       5 = Speaking / Workshop
+       6 = Other                                                          */
 
   /* ── FADE IN ── */
   const observer = new IntersectionObserver(entries => {
@@ -609,6 +618,10 @@
     txt.textContent = 'Sending…';
     icon.innerHTML  = '<span class="spin">⟳</span>';
 
+    // Fold subject into the message body since the table has no
+    // separate "subject" column — keeps the info without losing data.
+    const fullMessage = `[${subject}]\n\n${message}`;
+
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}`, {
         method: 'POST',
@@ -618,7 +631,13 @@
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Prefer': 'return=minimal'
         },
-        body: JSON.stringify({ name, email, company, collaboration_type: type, message })
+        body: JSON.stringify({
+          name,
+          email,
+          company,
+          collaboration_type: Number(type),
+          message: fullMessage
+        })
       });
 
       if (res.ok || res.status === 201) {
